@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The splash before Android 12: the app's dark background with the logo
+     centred at its own size. A window background is stretched to the screen,
+     so a whole-screen picture is squashed on any phone whose shape it was not
+     drawn for; a centred bitmap is never scaled. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_logo" />
+    </item>
+</layer-list>

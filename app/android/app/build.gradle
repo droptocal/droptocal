@@ -1,0 +1,126 @@
+apply plugin: 'com.android.application'
+
+/*
+ * One key for every build, wherever it is made.
+ *
+ * GitHub's builds and this machine's were each signed with their own debug
+ * key, so Android refused to put one over the other without an uninstall —
+ * which takes the access code with it. Both now sign with the same release
+ * key: kept outside the repository, in ~/.caldrop-signing/signing.properties
+ * (storeFile, storePassword, keyAlias, keyPassword) or wherever CALDROP_SIGNING
+ * points; on GitHub it comes from the repository's secrets. It is the key to
+ * register as the app signing key if DropToCal goes on Google Play.
+ *
+ * Without it a build here falls back to the machine's debug key; with
+ * CALDROP_REQUIRE_SIGNING set, as on GitHub, it stops instead of shipping an
+ * APK that cannot update the one on the phone.
+ */
+def signingFile = file(System.getenv('CALDROP_SIGNING') ?: "${System.getProperty('user.home')}/.caldrop-signing/signing.properties")
+def signing = new Properties()
+if (signingFile.exists()) signingFile.withInputStream { signing.load(it) }
+def signed = signing.getProperty('storeFile') != null
+if (!signed && System.getenv('CALDROP_REQUIRE_SIGNING')) {
+    throw new GradleException("No signing key at ${signingFile}: set CALDROP_SIGNING to a signing.properties file.")
+}
+
+/*
+ * The upload key, for Google Play only. Play re-signs what it distributes
+ * with the app signing key (the release key above, registered with Play), and
+ * accepts uploads signed with this one; keeping them apart means a leaked
+ * upload key can be replaced without touching the key every install depends
+ * on. Same file format, in ~/.caldrop-signing/upload.properties or wherever
+ * CALDROP_UPLOAD_SIGNING points.
+ */
+def uploadFile = file(System.getenv('CALDROP_UPLOAD_SIGNING') ?: "${System.getProperty('user.home')}/.caldrop-signing/upload.properties")
+def uploadKey = new Properties()
+if (uploadFile.exists()) uploadFile.withInputStream { uploadKey.load(it) }
+def uploadable = uploadKey.getProperty('storeFile') != null
+
+android {
+    namespace = "org.droptocal.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "org.droptocal.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // Every build so far called itself version 1, so two APKs a week apart
+        // were indistinguishable on the phone and Android saw no reason to
+        // install the newer one over the older. CI passes the run number and
+        // the date; a build by hand stays at 1, which is what a build by hand
+        // is for.
+        versionCode = (project.findProperty('caldropBuild') ?: '1').toInteger()
+        versionName = project.findProperty('caldropVersion') ?: '1.0-dev'
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        if (signed) {
+            caldrop {
+                storeFile file(signing.getProperty('storeFile'))
+                storePassword signing.getProperty('storePassword')
+                keyAlias signing.getProperty('keyAlias')
+                keyPassword signing.getProperty('keyPassword')
+            }
+        }
+        if (uploadable) {
+            upload {
+                storeFile file(uploadKey.getProperty('storeFile'))
+                storePassword uploadKey.getProperty('storePassword')
+                keyAlias uploadKey.getProperty('keyAlias')
+                keyPassword uploadKey.getProperty('keyPassword')
+            }
+        }
+    }
+    buildTypes {
+        // Still a debug build — debuggable, so the phone tests can read the
+        // page — but signed with the release key.
+        debug {
+            if (signed) signingConfig signingConfigs.caldrop
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (signed) signingConfig signingConfigs.caldrop
+        }
+        // The same release build, signed with the upload key: what goes to
+        // Google Play, as a bundle (./gradlew bundlePlay).
+        play {
+            initWith release
+            matchingFallbacks = ['release']
+            signingConfig = uploadable ? signingConfigs.upload : null
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

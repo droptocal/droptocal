@@ -1,0 +1,30 @@
+{
+  "name": "droptocal-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The native shell around DropToCal: the same web app, in an app.",
+  "type": "module",
+  "scripts": {
+    "web": "node scripts/build-web.mjs",
+    "sync": "npm run web && cap sync",
+    "android": "npm run sync && cap open android",
+    "apk": "node scripts/apk.mjs",
+    "install:latest": "node scripts/install-latest.mjs",
+    "ios": "npm run sync && cap open ios",
+    "test:phone": "node scripts/phone-test.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "typescript": "^5.6.3"
+  },
+  "overrides": {
+    "xcode": {
+      "uuid": "^11.1.1"
+    }
+  }
+}

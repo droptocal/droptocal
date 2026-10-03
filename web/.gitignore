@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.local
+.DS_Store
+android
+ios
+*.log
+tsconfig.tsbuildinfo
+
+# wrangler's local state from a deploy
+.wrangler

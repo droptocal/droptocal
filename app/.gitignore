@@ -1,0 +1,33 @@
+node_modules/
+# The web app is built, not kept: scripts/build-web.mjs puts it here.
+www/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+*.apk
+*.aab
+*.keystore
+
+# iOS
+ios/App/Pods/
+ios/App/build/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
+ios/App/Package.resolved
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/
+
+.DS_Store
+
+# Signing keys live in ~/.caldrop-signing; never here.
+*.jks
+signing.properties

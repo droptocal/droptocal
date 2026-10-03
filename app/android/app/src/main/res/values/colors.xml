@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The page's own background (the bg variable in the web app's styles.css), so the
+         splash, the empty WebView and the page that loads into it are one
+         colour from start to finish. values-night holds the dark one. -->
+    <color name="splash_background">#F6F7FA</color>
+</resources>

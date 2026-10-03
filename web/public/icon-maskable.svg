@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B5CFF"/>
+      <stop offset="0.55" stop-color="#3A6BFF"/>
+      <stop offset="1" stop-color="#1FA2FF"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.2" r="0.8">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="drop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2EE6D6"/>
+      <stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+    <clipPath id="card"><rect x="292" y="330" width="440" height="430" rx="72"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <g transform="translate(512 512) scale(0.72) translate(-512 -512)">
+  <!-- viewfinder -->
+  <g fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" opacity="0.92">
+    <path d="M190 330 V250 Q190 190 250 190 H330"/>
+    <path d="M694 190 H774 Q834 190 834 250 V330"/>
+    <path d="M834 694 V774 Q834 834 774 834 H694"/>
+    <path d="M330 834 H250 Q190 834 190 774 V694"/>
+  </g>
+
+  <!-- calendar page -->
+  <rect x="292" y="330" width="440" height="430" rx="72" fill="#fff"/>
+  <rect x="292" y="330" width="440" height="118" fill="#3438C8" clip-path="url(#card)"/>
+  <rect x="388" y="284" width="44" height="98" rx="22" fill="#fff"/>
+  <rect x="592" y="284" width="44" height="98" rx="22" fill="#fff"/>
+
+  <!-- the drop, landing -->
+  <path transform="translate(512 610)" fill="url(#drop)"
+        d="M0 -122 C34 -76 88 -26 88 30 A88 88 0 0 1 -88 30 C-88 -26 -34 -76 0 -122 Z"/>
+  </g>
+</svg>

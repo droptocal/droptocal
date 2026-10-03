@@ -1,0 +1,104 @@
+name: Build Android APK
+
+# The point of building here is that a phone-only workflow still produces
+# something installable: the run leaves a debug APK as an artifact.
+# The web app and the shell are in one repository, so a change to either is a
+# new APK.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'app/**'
+      - '.github/workflows/android.yml'
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            web/package-lock.json
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+
+      # Builds web/ and copies its dist into app/www/.
+      - name: Build the web app into the shell
+        id: web
+        run: npm run web
+
+      - run: npx cap sync android
+
+      # The same release key as the builds made by hand, so either installs
+      # over the other. From the repository's secrets; the build stops if they
+      # are missing rather than signing with a key of its own.
+      - name: Put the signing key in place
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          umask 077
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=caldrop\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/release.jks" "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" \
+            > "$RUNNER_TEMP/signing.properties"
+        env:
+          KEYSTORE_BASE64: ${{ secrets.CALDROP_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.CALDROP_KEYSTORE_PASSWORD }}
+
+      - name: Assemble the debug APK
+        working-directory: app/android
+        # The version code is minutes since 2026-01-01: it rises with every
+        # build whichever workflow makes it, which Google Play requires and a
+        # run number (one count per workflow) does not give. The name carries
+        # the date, the run and the web app's ref, which a tester reports.
+        run: |
+          ./gradlew --no-daemon assembleDebug \
+            -PcaldropBuild="$(( ($(date -u +%s) - 1767225600) / 60 ))" \
+            -PcaldropVersion="$(date -u +%Y-%m-%d).${GITHUB_RUN_NUMBER} (main@${WEB_COMMIT})"
+        env:
+          WEB_COMMIT: ${{ steps.web.outputs.commit }}
+          CALDROP_SIGNING: ${{ runner.temp }}/signing.properties
+          CALDROP_REQUIRE_SIGNING: '1'
+
+      - name: Check which key signed it
+        id: signer
+        run: |
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          digest="$("$apksigner" verify --print-certs android/app/build/outputs/apk/debug/app-debug.apk | grep -m1 'SHA-256' | awk '{print $NF}')"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          rm -f "$RUNNER_TEMP/release.jks" "$RUNNER_TEMP/signing.properties"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: droptocal-debug-apk
+          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Say where it is
+        run: |
+          {
+            echo '## DropToCal debug APK'
+            echo
+            echo 'Download it from the **Artifacts** section of this run and install it'
+            echo 'on the phone (Android will ask about installing from an unknown source).'
+            echo
+            echo "Commit: \`${WEB_COMMIT:-unknown}\`"
+            echo
+            echo "Signed with: \`${SIGNER}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          WEB_COMMIT: ${{ steps.web.outputs.commit }}
+          SIGNER: ${{ steps.signer.outputs.digest }}

@@ -1,0 +1,21 @@
+name = "caldrop-fetcher"
+main = "fetcher.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Which pages a browser will let call this. Not a security boundary — anyone
+# calling directly can claim whatever origin they like — so it narrows the
+# blast radius rather than closing the door. The access code closes the door.
+ALLOWED_ORIGINS = "https://droptocal.org,https://localhost,capacitor://localhost"
+
+# The most of a page that is read before the rest is dropped. A link to a film
+# is otherwise read a megabyte at a time to find no text in it.
+MAX_PAGE_BYTES = "1048576"
+
+# The access code is a Worker *secret*, never a var, so it is not here. Two
+# names for the one thing, because they live in different places: you set the
+# repository secret FETCHER_ACCESS_CODE, and the deploy workflow uploads it to
+# Cloudflare as this worker's ACCESS_CODE. The repository already spends the
+# name ACCESS_CODE on the endpoint, which is why this one is spelled out.
+#
+# Without it this refuses to serve at all, unless ALLOW_NO_CODE is "yes".

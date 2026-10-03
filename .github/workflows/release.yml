@@ -1,0 +1,116 @@
+name: Release
+
+# A tag like v1.2.0 makes a release: the APK for anyone installing it
+# directly, signed with the app signing key, and the bundle for Google Play,
+# signed with the upload key. Both go on a GitHub Release of the same name.
+#
+# Whoever installs it brings their own OpenAI-compatible API, which Settings
+# opens on first run.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'An existing tag to build, e.g. v1.0.0'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            web/package-lock.json
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+
+      - name: Build the web app into the shell
+        id: web
+        run: npm run web
+
+      - run: npx cap sync android
+
+      - name: Put both signing keys in place
+        run: |
+          umask 077
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "$UPLOAD_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=caldrop\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/release.jks" "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > "$RUNNER_TEMP/signing.properties"
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=caldrop-upload\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/upload.jks" "$UPLOAD_PASSWORD" "$UPLOAD_PASSWORD" > "$RUNNER_TEMP/upload.properties"
+        env:
+          KEYSTORE_BASE64: ${{ secrets.CALDROP_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.CALDROP_KEYSTORE_PASSWORD }}
+          UPLOAD_BASE64: ${{ secrets.CALDROP_UPLOAD_KEYSTORE_BASE64 }}
+          UPLOAD_PASSWORD: ${{ secrets.CALDROP_UPLOAD_KEYSTORE_PASSWORD }}
+
+      # The version name is the tag without its v; the code is minutes since
+      # 2026-01-01, which rises across every workflow as Play requires.
+      - name: Build the APK and the Play bundle
+        working-directory: app/android
+        run: |
+          ./gradlew --no-daemon assembleRelease bundlePlay \
+            -PcaldropBuild="$(( ($(date -u +%s) - 1767225600) / 60 ))" \
+            -PcaldropVersion="${TAG#v}"
+        env:
+          CALDROP_SIGNING: ${{ runner.temp }}/signing.properties
+          CALDROP_UPLOAD_SIGNING: ${{ runner.temp }}/upload.properties
+          CALDROP_REQUIRE_SIGNING: '1'
+
+      - name: Check the keys, name the files
+        id: files
+        run: |
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          apk_key="$("$apksigner" verify --print-certs android/app/build/outputs/apk/release/app-release.apk | grep -m1 'SHA-256' | awk '{print $NF}')"
+          aab_key="$(keytool -printcert -jarfile android/app/build/outputs/bundle/play/app-play.aab | grep -m1 'SHA256:' | awk '{print $NF}')"
+          echo "APK signed with $apk_key; bundle with $aab_key"
+          # The APK must carry the app signing key every install trusts.
+          test "$apk_key" = "3f6821d36a7c0f98c3d7a3f2db242a3c3314635df347ee66c9e0fff52c1b21ff"
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk "out/droptocal-${TAG#v}.apk"
+          cp android/app/build/outputs/bundle/play/app-play.aab "out/droptocal-${TAG#v}-play.aab"
+          rm -f "$RUNNER_TEMP"/*.jks "$RUNNER_TEMP"/*.properties
+          echo "apk_key=$apk_key" >> "$GITHUB_OUTPUT"
+          echo "aab_key=$aab_key" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        run: |
+          {
+            echo "DropToCal ${TAG#v} for Android."
+            echo
+            echo "- \`droptocal-${TAG#v}.apk\`: install directly (Android asks about installing from an unknown source)."
+            echo "- \`droptocal-${TAG#v}-play.aab\`: for Google Play."
+            echo
+            echo "Settings asks for an AI provider (OpenAI-compatible, or Anthropic) and a key on first run."
+            echo
+            echo "Commit \`${WEB_COMMIT}\`. APK key \`${APK_KEY}\`, bundle key \`${AAB_KEY}\`."
+          } > notes.md
+          gh release create "$TAG" out/* --title "DropToCal ${TAG#v}" --notes-file notes.md --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WEB_COMMIT: ${{ steps.web.outputs.commit }}
+          APK_KEY: ${{ steps.files.outputs.apk_key }}
+          AAB_KEY: ${{ steps.files.outputs.aab_key }}

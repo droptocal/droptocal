@@ -45,7 +45,7 @@ PRIVATE BY DESIGN
 • What you read goes from your phone straight to the provider you chose — never through a server of ours
 • Your API key stays on your phone, encrypted
 • Photos are not saved to your gallery, and nothing you read is kept
-• Open source: github.com/DropToCal/droptocal
+• Open source: github.com/droptocal/droptocal
 
 DropToCal also runs in the browser at droptocal.org.
 

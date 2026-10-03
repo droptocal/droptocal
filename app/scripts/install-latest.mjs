@@ -17,7 +17,7 @@ import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const REPO = 'DropToCal/droptocal';
+const REPO = 'droptocal/droptocal';
 // The key every DropToCal build is signed with (see android/app/build.gradle).
 const KEY = '3f6821d36a7c0f98c3d7a3f2db242a3c3314635df347ee66c9e0fff52c1b21ff';
 

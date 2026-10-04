@@ -115,7 +115,7 @@ export async function checkConnection(settings: Settings, onLine: (lines: CheckL
         : list.why === 'browser'
           ? inNativeApp()
             ? 'the app was refused, though the address answers'
-            : `${provider?.name ?? 'This API'} does not let web pages call it. Choose one that does (OpenAI, Anthropic, OpenRouter, Groq, Mistral).`
+            : `${provider?.name ?? 'This API'} does not let web pages call it. Choose one that does (OpenAI, Anthropic, OpenRouter, Mistral).`
           : list.why === 'unreachable'
             ? `nothing answered at that address${list.detail ? ` (${list.detail})` : ''}`
             : `the API answered ${list.detail} to a list of models`;

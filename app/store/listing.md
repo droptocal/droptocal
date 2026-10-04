@@ -41,7 +41,7 @@ FREE, NOTHING TO SET UP
 Install it and point the camera: DropToCal reads with a free AI model, about 20 reads a day per phone. It is a non-profit project, and the free model is shared fairly by everyone.
 
 OR BRING YOUR OWN AI
-For more, or a model of your choice, use your own API key with OpenAI, Anthropic (Claude), OpenRouter, Groq, Mistral or any other OpenAI-compatible service. The app lists the models your key can use and tests the connection for you. You pay your provider directly, usually a fraction of a cent per poster.
+For more, or a model of your choice, use your own API key with OpenAI, Anthropic (Claude), OpenRouter, Mistral or any other OpenAI-compatible service. The app lists the models your key can use and tests the connection for you. You pay your provider directly, usually a fraction of a cent per poster.
 
 PRIVATE BY DESIGN
 • No account, no ads, no analytics, no tracking

@@ -174,7 +174,7 @@ export function SettingsPanel({ settings, onSave, onClose }: Props) {
         {provider && !provider.browser && !app && (
           <p className="hint warn">
             {provider.name} does not let web pages call it, so it will not work here. OpenAI,
-            Anthropic, OpenRouter, Groq and Mistral do.
+            Anthropic, OpenRouter and Mistral do.
           </p>
         )}
         <label>

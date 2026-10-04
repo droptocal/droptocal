@@ -2,6 +2,7 @@ package org.droptocal.app;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.Base64;
 import com.getcapacitor.JSObject;
@@ -68,7 +69,30 @@ public class TextRecognitionPlugin extends Plugin {
         return recognizer;
     }
 
-    /** Every line, regrouped into the rows of the page. */
+    /** A line, placed on the page as if the page were held straight. */
+    private static final class Placed {
+        final String text;
+        final double x;
+        final double y;
+        final double height;
+
+        Placed(String text, double x, double y, double height) {
+            this.text = text;
+            this.x = x;
+            this.y = y;
+            this.height = height;
+        }
+    }
+
+    /**
+     * Every line, regrouped into the rows of the page.
+     *
+     * A photo is rarely straight, and on a table held at 4° the right-hand
+     * column sits a whole row lower than the left: grouped by plain height,
+     * every row came out split in two. So the page's tilt — the middle of the
+     * angles ML Kit gives each line — is taken out first, and lines are
+     * grouped by where they sit once it is.
+     */
     static String inRows(Text found) {
         List<Text.Line> lines = new ArrayList<>();
         for (Text.TextBlock block : found.getTextBlocks()) {
@@ -76,31 +100,55 @@ public class TextRecognitionPlugin extends Plugin {
                 if (line.getBoundingBox() != null && !line.getText().trim().isEmpty()) lines.add(line);
             }
         }
-        lines.sort((a, b) -> Integer.compare(a.getBoundingBox().centerY(), b.getBoundingBox().centerY()));
+        if (lines.isEmpty()) return "";
 
-        List<List<Text.Line>> rows = new ArrayList<>();
-        Rect band = null;
+        List<Float> angles = new ArrayList<>();
+        for (Text.Line line : lines) angles.add(line.getAngle());
+        angles.sort(Float::compare);
+        double tilt = Math.toRadians(angles.get(angles.size() / 2));
+        double cos = Math.cos(tilt);
+        double sin = Math.sin(tilt);
+
+        List<Placed> placed = new ArrayList<>();
         for (Text.Line line : lines) {
             Rect box = line.getBoundingBox();
-            // Same row when this line's middle falls inside the row's first
-            // line: lenient enough for a slight tilt, strict enough that
-            // two lines of a title stay two rows.
-            if (band != null && box.centerY() >= band.top && box.centerY() <= band.bottom) {
+            double cx = box.exactCenterX();
+            double cy = box.exactCenterY();
+            // The line's own height, not its box's: a tilted box is taller.
+            double height = box.height();
+            // Where the line starts, so a row reads in column order.
+            double startX = box.left;
+            double startY = cy;
+            Point[] corners = line.getCornerPoints();
+            if (corners != null && corners.length == 4) {
+                height = Math.hypot(corners[3].x - corners[0].x, corners[3].y - corners[0].y);
+                startX = corners[0].x;
+                startY = corners[0].y;
+            }
+            placed.add(new Placed(line.getText().trim(), startX * cos + startY * sin, -cx * sin + cy * cos, height));
+        }
+        placed.sort((a, b) -> Double.compare(a.y, b.y));
+
+        List<List<Placed>> rows = new ArrayList<>();
+        Placed first = null;
+        for (Placed line : placed) {
+            // Same row when the straightened middles are within half a line.
+            if (first != null && Math.abs(line.y - first.y) < 0.5 * Math.max(line.height, first.height)) {
                 rows.get(rows.size() - 1).add(line);
             } else {
-                List<Text.Line> row = new ArrayList<>();
+                List<Placed> row = new ArrayList<>();
                 row.add(line);
                 rows.add(row);
-                band = box;
+                first = line;
             }
         }
 
         StringBuilder out = new StringBuilder();
-        for (List<Text.Line> row : rows) {
-            row.sort((a, b) -> Integer.compare(a.getBoundingBox().left, b.getBoundingBox().left));
+        for (List<Placed> row : rows) {
+            row.sort((a, b) -> Double.compare(a.x, b.x));
             for (int i = 0; i < row.size(); i++) {
                 if (i > 0) out.append(" | ");
-                out.append(row.get(i).getText().trim());
+                out.append(row.get(i).text);
             }
             out.append('\n');
         }

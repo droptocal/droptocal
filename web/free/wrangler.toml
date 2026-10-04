@@ -31,6 +31,11 @@ new_sqlite_classes = ["Quota"]
 #   TURNSTILE_SECRET   the Turnstile widget's secret key
 [vars]
 
-# Request logs kept in the dashboard, so the cost per scan can be read back.
+# The Worker's own log lines — tokens, neurons, duration, never content —
+# kept in the dashboard for 3 days. Cloudflare's per-request logs, which
+# would hold request metadata, are off.
 [observability]
 enabled = true
+
+[observability.logs]
+invocation_logs = false

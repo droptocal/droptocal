@@ -25,7 +25,7 @@
  */
 
 import { DurableObject } from 'cloudflare:workers';
-import { playIntegrity } from './integrity.js';
+import { playIntegrity, sha256 } from './integrity.js';
 
 const DEFAULTS = {
   MODEL: '@cf/google/gemma-4-26b-a4b-it',
@@ -72,7 +72,9 @@ export default {
     }
 
     const path = new URL(request.url).pathname.replace(/\/+$/, '');
-    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const address = request.headers.get('CF-Connecting-IP') || 'unknown';
+    // Counted by a hash, so no address is ever stored; the counts go the next day.
+    const ip = (await sha256(address)).slice(0, 24);
 
     // A burst from one address waits a minute; the daily counts are below.
     if (env.LIMIT && request.method === 'POST') {
@@ -83,7 +85,7 @@ export default {
     if (request.method === 'GET' && path === '/v1/models') {
       return json(200, { object: 'list', data: [{ id: 'free', object: 'model', owned_by: 'droptocal' }] }, headers);
     }
-    if (request.method === 'POST' && path === '/v1/session') return session(request, env, ip, headers);
+    if (request.method === 'POST' && path === '/v1/session') return session(request, env, ip, address, headers);
     if (request.method === 'POST' && path === '/v1/chat/completions') return complete(request, env, ip, headers);
     return fail(404, 'POST /v1/session, then POST /v1/chat/completions', headers);
   },
@@ -96,7 +98,7 @@ const quota = (env) => env.QUOTA.get(env.QUOTA.idFromName('global'));
  * proves nothing alone — so what it may use is decided by the proof that
  * comes with it, and how many it may mint from one address is counted.
  */
-async function session(request, env, ip, headers) {
+async function session(request, env, ip, address, headers) {
   let asked;
   try {
     asked = await request.json();
@@ -113,7 +115,7 @@ async function session(request, env, ip, headers) {
     if (verdict.ok) tier = 'play';
     else why = verdict.reason;
   } else if (asked.turnstile) {
-    const verdict = await turnstile(env, asked.turnstile, ip);
+    const verdict = await turnstile(env, asked.turnstile, address);
     if (verdict.ok) tier = 'web';
     else why = verdict.reason;
   }

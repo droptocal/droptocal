@@ -37,14 +37,17 @@ WHAT YOU GET
 • Times as printed — 20:00 on the poster is 20:00 in your calendar
 • One tap to your calendar app, with title, time, place and repeat filled in. Also as a calendar file, or for Google Calendar and Outlook
 
-BRING YOUR OWN AI
-DropToCal reads with an AI model of your choice, using your own API key. It works with OpenAI, Anthropic (Claude), OpenRouter, Groq, Mistral and any other OpenAI-compatible service. Pick a provider, paste your key, choose a model — the app lists the ones your key can use and tests the connection for you. You pay your provider directly, usually a fraction of a cent per poster.
+FREE, NOTHING TO SET UP
+Install it and point the camera: DropToCal reads with a free AI model, about 20 reads a day per phone. It is a non-profit project, and the free model is shared fairly by everyone.
+
+OR BRING YOUR OWN AI
+For more, or a model of your choice, use your own API key with OpenAI, Anthropic (Claude), OpenRouter, Groq, Mistral or any other OpenAI-compatible service. The app lists the models your key can use and tests the connection for you. You pay your provider directly, usually a fraction of a cent per poster.
 
 PRIVATE BY DESIGN
 • No account, no ads, no analytics, no tracking
-• What you read goes from your phone straight to the provider you chose — never through a server of ours
-• Your API key stays on your phone, encrypted
-• Photos are not saved to your gallery, and nothing you read is kept
+• Nothing you read is kept — not by us, and not by the free model, which is never trained on it
+• With your own provider, what you read goes straight from your phone to them, and your key stays on your phone, encrypted
+• Photos are not saved to your gallery
 • Open source: github.com/droptocal/droptocal
 
 DropToCal also runs in the browser at droptocal.org.
@@ -106,35 +109,45 @@ API key: <a key made for review, with a small spending limit>
 - Expected rating: Everyone / PEGI 3 / USK 0
 
 ### Target audience and content
-- Target age group: **18 and over** (the app needs a paid API key; choosing only 18+ keeps it outside Play's Families requirements)
+- Target age group: **18 and over** (choosing only 18+ keeps it outside Play's Families requirements)
 - Could it unintentionally appeal to children? **No**
 
 ### News app
 No.
 
 ### Data safety
-Play counts anything an app sends off the device as *collected*, even when it goes to a service the user chose rather than to the developer. So:
+With the free model (the default) what a user reads goes to our server on Cloudflare to be read, so it is
+*collected* in Play's sense, though only for the moment it is read. Answers:
 
 **Does your app collect or share any of the required user data types?** Yes.
 
-**Is all of the user data collected by your app encrypted in transit?** Yes. *(Every listed provider is HTTPS; an address the user types is their choice.)*
+**Is all of the user data collected by your app encrypted in transit?** Yes. *(api.droptocal.org and every listed provider are HTTPS; an address the user types is their choice.)*
 
-**Do you provide a way for users to request that their data is deleted?** No — nothing is kept to delete. *(Answer "No"; the policy explains that the app keeps nothing and providers hold their own data.)*
+**Do you provide a way for users to request that their data is deleted?** No. *(Content is never kept; the installation number and counts delete themselves within a day, sessions within a week, and Clear in Settings starts a new number. The policy says so.)*
 
-Data types — mark each as **Collected**, **not shared**, **processed ephemerally: Yes**, **required** (the app cannot read anything without it), purpose **App functionality**:
+Data types:
 
-| Category | Type | Why |
-|---|---|---|
-| Photos and videos | Photos | a poster photographed or shared is sent to the user's AI provider to be read |
-| Files and docs | Files and docs | a shared PDF's text or pages are sent to the user's AI provider |
-| App activity | Other user-generated content | text and the text of web pages the user shares or pastes are sent to the user's AI provider |
+| Category | Type | Collected | Shared | Ephemeral | Required | Purpose | Why |
+|---|---|---|---|---|---|---|---|
+| Photos and videos | Photos | Yes | No | **Yes** | Yes | App functionality | a photographed or shared poster is sent to the AI model to be read |
+| Files and docs | Files and docs | Yes | No | **Yes** | Yes | App functionality | a shared PDF's text or pages are sent to the AI model |
+| App activity | Other user-generated content | Yes | No | **Yes** | Yes | App functionality | shared or pasted text, and the text of web pages, is sent to the AI model |
+| Device or other IDs | Device or other IDs | Yes | No | No | Yes | App functionality, Fraud prevention, security and compliance | the random installation number the free model's daily limit is counted under, kept up to a week |
 
-Not collected: location, personal info, contacts, calendar, financial info, health, messages, audio, device or other IDs, web browsing history, app info and performance (no crash reporting).
+*Required:* the app cannot read anything without sending it. The installation number is only created when the free model is used, but it is the default, so answer Yes.
 
-**Not shared:** sending content to the provider the user configured is a transfer the user initiates themselves, which Play does not count as sharing.
+Not collected: location (IP addresses are counted only as a one-way hash, never stored), personal info, contacts, calendar, financial info, health, messages, audio, web browsing history, app info and performance (no crash reporting).
+
+**Not shared:** Cloudflare runs the free model and our server on our behalf, as a service provider, which Play does not count as sharing. Content sent to a provider the user configured themselves is a transfer the user initiates, which Play does not count as sharing either.
 
 ### Government apps, financial features, health
 None of them.
+
+## Release notes for 1.1
+
+```
+Free to use with nothing to set up: DropToCal now reads with a free AI model, about 20 reads a day per phone. Your own API key still works, for more or a model of your choice.
+```
 
 ## Release notes for 1.0
 

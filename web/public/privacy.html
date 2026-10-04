@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Privacy · DropToCal</title>
-    <meta name="description" content="What DropToCal does with what you give it: it sends it to the AI provider you chose, and keeps nothing." />
+    <meta name="description" content="What DropToCal does with what you give it: an AI model reads it, and nothing is kept." />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <style>
       :root {
@@ -40,6 +40,8 @@
       header a { color: inherit; text-decoration: none; font-weight: 700; font-size: 20px; }
       h1 { font-size: 30px; line-height: 1.2; margin: 24px 0 4px; }
       h2 { font-size: 19px; margin: 36px 0 8px; }
+      h3 { font-size: 16px; margin: 24px 0 4px; }
+      code { font-size: 14px; }
       p, li { color: var(--text); }
       .muted { color: var(--muted); }
       a { color: var(--accent); }
@@ -66,13 +68,15 @@
       </header>
 
       <h1>Privacy</h1>
-      <p class="muted">For the DropToCal app for Android and the website droptocal.org. Last updated 3 October 2026.</p>
+      <p class="muted">For the DropToCal app for Android and the website droptocal.org. Last updated 4 October 2026.</p>
 
       <div class="summary">
-        <p><strong>In short:</strong> DropToCal has no accounts, no analytics, no ads and no server of its
-          own that receives what you read. A photo, PDF, text or link you give it goes from your device
-          straight to the AI provider <em>you</em> set up, with your own key, and the events come back to
-          your device. Nothing is kept: not by the app beyond your settings, and not by us at all.</p>
+        <p><strong>In short:</strong> DropToCal has no accounts, no analytics and no ads. To find the events in
+          a photo, PDF, text or link, it asks an AI model — either DropToCal's free one, which runs on
+          Cloudflare Workers AI, or a provider you set up yourself with your own key. The content is read,
+          the events come back to your device, and nothing you read is kept, by us or by Cloudflare. To share
+          the free model fairly, we count how often each installation uses it, under a random number that
+          does not identify you.</p>
       </div>
 
       <h2>Who is responsible</h2>
@@ -85,17 +89,47 @@
         below can be checked.</p>
 
       <h2>What happens to what you read</h2>
-      <p>To find the events in a poster, a PDF, a text or a web page, DropToCal asks an AI model. You choose
-        which: in Settings you enter the address of an AI provider (for example OpenAI, Anthropic, OpenRouter,
-        Groq, Mistral or Melious, or any compatible service), your own API key, and a model.</p>
+      <p>To find the events in a poster, a PDF, a text or a web page, DropToCal asks an AI model. In Settings,
+        under <em>Provider</em>, you choose which.</p>
       <ul>
         <li><strong>What is sent:</strong> the content you chose to read — a photo, the pages of a PDF (as text, or
           as images if it has no text), a text, or the text of a web page — together with instructions for the
           model. Nothing else from your device is sent.</li>
-        <li><strong>Where it goes:</strong> directly from your device to the provider you entered. It does not pass
-          through any server of ours.</li>
         <li><strong>Photos</strong> are scaled down and re-encoded before they are sent, which also removes their
           metadata, such as where a photo was taken.</li>
+      </ul>
+
+      <h3>DropToCal free (the default)</h3>
+      <ul>
+        <li><strong>Where it goes:</strong> to <code>api.droptocal.org</code>, a small program of ours running on
+          Cloudflare, which passes it to an AI model on <strong>Cloudflare Workers AI</strong> and returns the
+          answer. The content is held only while it is being read.</li>
+        <li><strong>Not kept, not used for training:</strong> we do not store or log what you read. Cloudflare
+          states that it does not use content sent to Workers AI to train models or improve its services, and
+          does not store it unless the program asks it to — ours does not.</li>
+        <li><strong>What is counted:</strong> the free model is shared by everyone and has a daily limit, so the
+          app creates a random installation number when you first use it, and our server keeps, for each
+          installation, how many reads it made today, and a session (the random number, a random key and its
+          expiry) for up to a week. It also counts reads per network, under a one-way hash of the IP address
+          rather than the address itself. Counts are deleted the next day. None of this is linked to who you
+          are or to what you read.</li>
+        <li><strong>Technical logs:</strong> for each read our server logs how long it took and how much of the
+          free allowance it used — never the content, your IP address or your installation number. These logs
+          are deleted after three days.</li>
+        <li><strong>Checking it is really DropToCal:</strong> on the website, <strong>Cloudflare Turnstile</strong>
+          checks once per session, usually invisibly, that a person and not a script is using the page; Cloudflare
+          processes technical signals from your browser for this, under its Turnstile privacy terms. In the app
+          as installed from Google Play, the app may ask <strong>Google Play Integrity</strong> to confirm that it
+          is the genuine app on a genuine device; Google processes information about the app and device for this,
+          and we receive only its verdict.</li>
+      </ul>
+
+      <h3>Your own provider</h3>
+      <ul>
+        <li>In Settings you can instead enter the address of an AI provider (for example OpenAI, Anthropic,
+          OpenRouter, Groq or Mistral, or any compatible service), your own API key and a model.</li>
+        <li><strong>Where it goes:</strong> then directly from your device to that provider. It does not pass
+          through any server of ours, and nothing is counted.</li>
         <li><strong>What the provider does with it</strong> is governed by your agreement with that provider and its
           privacy policy. Please read it before you use a provider; some offer settings that keep your requests
           from being stored or used for training.</li>
@@ -104,7 +138,8 @@
       <h2>Links</h2>
       <ul>
         <li><strong>In the app,</strong> a link you share or paste is fetched by your phone itself, like a browser
-          would; only the page's text is then sent to your AI provider.</li>
+          would; only the page's text is then sent to the AI model, and only its first part for a long page in the free
+          mode.</li>
         <li><strong>On the website,</strong> a browser may not fetch other sites, so links are not read unless you
           choose a reader in Settings. If you choose <em>Jina Reader</em>, the link is sent to Jina AI, which fetches
           the page and returns its text; Jina AI's privacy policy applies to that. If you choose a reader of your
@@ -117,6 +152,10 @@
         <tr>
           <td>Your settings: provider address, models, link reader</td>
           <td>On your device (in the app's storage, or in your browser's local storage on the website).</td>
+        </tr>
+        <tr>
+          <td>The random installation number and the free model's session key</td>
+          <td>On your device, so the daily count follows the installation. They identify no one.</td>
         </tr>
         <tr>
           <td>Your API key and any reader key</td>
@@ -149,31 +188,36 @@
 
       <h2>Services involved in running DropToCal</h2>
       <ul>
+        <li><strong>Cloudflare</strong> (Cloudflare, Inc.) runs the free AI model (Workers AI) and our small server
+          for it, provides Turnstile on the website, provides the domain names, redirects droptocal.com to
+          droptocal.org, and forwards email sent to hello@droptocal.org; see Cloudflare's privacy policy. As
+          above, it does not keep or train on what you read.</li>
         <li><strong>GitHub</strong> (GitHub, Inc.) hosts the website droptocal.org. Like any web host it processes
           your IP address and technical request data to deliver the page; see GitHub's privacy statement.</li>
-        <li><strong>Cloudflare</strong> (Cloudflare, Inc.) provides the domain names, redirects droptocal.com to
-          droptocal.org, and forwards email sent to hello@droptocal.org; see Cloudflare's privacy policy.</li>
         <li><strong>Google Play,</strong> if you install the app from there, processes data about your installation
-          under Google's privacy policy. DropToCal itself uses no Google services.</li>
+          under Google's privacy policy, including for Play Integrity as described above.</li>
       </ul>
-      <p>None of these receive what you read with DropToCal.</p>
 
       <h2>No tracking</h2>
       <p>DropToCal contains no analytics, no crash reporting, no advertising and no tracking of any kind, and the
-        website sets no cookies. We do not know who uses DropToCal or what they read with it.</p>
+        website sets no cookies of its own. The counts above exist only to share the free model fairly. We do not
+        know who uses DropToCal or what they read with it.</p>
 
       <h2>Children</h2>
       <p>DropToCal is not directed at children, and it collects no data from anyone.</p>
 
       <h2>Your rights</h2>
-      <p>Because we hold no data about you, there is nothing for us to show, correct or delete. Data you sent to
-        an AI provider or a link reader is held by that service; ask them. You can also complain to the data
+      <p>We hold nothing that identifies you: the counts are kept under a random number and a hash, and are gone
+        within a day (sessions within a week), so in practice there is nothing for us to show, correct or delete.
+        Removing the app's data, or <em>Clear</em> in Settings, gives your installation a new random number. Data you
+        sent to your own AI provider or a link reader is held by that service; ask them. You can also complain to the data
         protection authority where you live. For any question, write to
         <a href="mailto:hello@droptocal.org">hello@droptocal.org</a>.</p>
 
       <h2>Changes</h2>
-      <p>If DropToCal ever starts handling data differently — for example a paid option where requests go through
-        a server of ours — this page will say so before that happens, with a new date at the top.</p>
+      <p>If DropToCal starts handling data differently, this page will say so before that happens, with a new date
+        at the top. The previous version said that nothing passed through a server of ours; that changed on
+        4 October 2026 with the free model, described above.</p>
 
       <footer class="muted">
         <a href="./">DropToCal</a> · <a href="mailto:hello@droptocal.org">hello@droptocal.org</a>

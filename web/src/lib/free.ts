@@ -69,6 +69,16 @@ export function forgetSession(): void {
   }
 }
 
+/** Clear in Settings: the installation starts again under a new number. */
+export function forgetInstallation(): void {
+  forgetSession();
+  try {
+    localStorage.removeItem(INSTALL_KEY);
+  } catch {
+    /* nothing kept */
+  }
+}
+
 let opening: Promise<string> | null = null;
 
 /** The Bearer key for the free API, opening a session when there is none. */

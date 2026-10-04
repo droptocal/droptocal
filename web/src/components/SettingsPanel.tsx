@@ -4,6 +4,7 @@ import { diagnose } from '../lib/diagnose';
 import { ModelField } from './ModelField';
 import { inNativeApp } from '../lib/native';
 import { PROVIDERS, providerFor } from '../lib/providers';
+import { forgetInstallation } from '../lib/free';
 import { endpointHost, resetSettings, secretsAreEncrypted } from '../lib/settings';
 import type { ApiStyle, LinkReader, Settings } from '../lib/types';
 
@@ -351,6 +352,7 @@ export function SettingsPanel({ settings, onSave, onClose }: Props) {
             className="ghost small"
             onClick={() => {
               const fresh = resetSettings();
+              forgetInstallation();
               setApiBase(fresh.apiBase);
               setApiStyle(fresh.apiStyle);
               setApiKey(fresh.apiKey);

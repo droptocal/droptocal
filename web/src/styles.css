@@ -230,7 +230,14 @@ textarea {
   padding: 10px 12px;
 }
 
-input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* No outlines where nothing needs one: a field being typed into says so with
+   its border, a radio or checkbox by being checked. */
+input:focus,
+select:focus,
+textarea:focus { outline: none; }
+input:not([type='radio']):not([type='checkbox']):focus,
+select:focus,
+textarea:focus { border-color: var(--accent); }
 input:disabled { opacity: 0.5; }
 
 /* The field label: a caption above an input. A label that is a button is not
@@ -888,12 +895,26 @@ body:has(.sheet-backdrop)::before { display: none; }
 
 /* ---- being able to see where you are ---- */
 
-button:focus-visible,
-.button:focus-visible,
-a.button:focus-visible,
-summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+/* Android's grey flash on every tap; the controls have a press of their own. */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* For a keyboard. A phone's WebView counted a tap as reason enough to show
+   it, and the shutter wore a ring after every photo — so only where there is
+   a pointer that hovers, which is where there is a keyboard too. */
+button:focus,
+.button:focus,
+summary:focus { outline: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  button:focus-visible,
+  .button:focus-visible,
+  a.button:focus-visible,
+  summary:focus-visible,
+  input[type='radio']:focus-visible,
+  input[type='checkbox']:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 /* A hover border is a mouse's idea of feedback; a phone gets a press instead. */

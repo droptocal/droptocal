@@ -434,7 +434,7 @@ export function CameraPanel({ onShots, busy, results, onLive, wantCamera, onProb
             }}
             aria-label="Turn the camera off"
           >
-            ✕
+            <Icon name="close" />
           </button>
         </div>
 

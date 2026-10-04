@@ -45,6 +45,9 @@ const PATHS = {
       <path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8" />
     </>
   ),
+  // A glyph ✕ was the font's to size, and on some phones came out half the
+  // size of the icons beside it.
+  close: <path d="M6 6l12 12M18 6 6 18" />,
   flash: <path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z" />,
   flashOff: (
     <>

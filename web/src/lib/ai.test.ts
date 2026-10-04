@@ -135,3 +135,27 @@ describe('an API of one’s own', () => {
     await expect(extractEvents(source, own)).rejects.toThrow(/Model not found/);
   });
 });
+
+describe('a date is not a time', () => {
+  it('sees through a two-digit year read as minutes', async () => {
+    const { dateReadAsTime } = await import('./ai');
+    expect(dateReadAsTime('09:26', '28.09.26 | HALLE 622 ZÜRICH')).toBe(true);
+    expect(dateReadAsTime('09:10', '09.10.26 | HALLE 622 ZÜRICH')).toBe(true);
+    expect(dateReadAsTime('19:11', '19.11.26 | DYNAMO ZÜRICH')).toBe(true);
+  });
+
+  it('keeps a time that is printed as one', async () => {
+    const { dateReadAsTime } = await import('./ai');
+    expect(dateReadAsTime('19:30', '22. Mai 2026 19:30 Uhr')).toBe(false);
+    expect(dateReadAsTime('09:10', '09.10.26, 09:10 Uhr')).toBe(false);
+    expect(dateReadAsTime('20:00', '28.09.26 20 Uhr')).toBe(false);
+    expect(dateReadAsTime('', '28.09.26')).toBe(false);
+  });
+
+  it('finds no time inside a date', async () => {
+    const { timeIn } = await import('./ai');
+    expect(timeIn('28.09.26 | HALLE 622')).toBe('');
+    expect(timeIn('28.09.2026, 20.15')).toBe('20:15');
+    expect(timeIn('Sa 24.10. 10:00-16:00')).toBe('10:00');
+  });
+});

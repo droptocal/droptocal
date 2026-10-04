@@ -20,9 +20,8 @@
  * allowance, so however this is abused it cannot cost money: at worst it is
  * used up for the day.
  *
- * In the app a photo is read on the phone first (ML Kit), so what arrives
- * here is usually text. A browser has no such reader and sends the photo,
- * which the model can read too, at the cost of a few more tokens.
+ * A photo arrives as a picture and the model reads it: about 200 tokens at
+ * the size it is read, no more than the words on it would be.
  */
 
 import { DurableObject } from 'cloudflare:workers';

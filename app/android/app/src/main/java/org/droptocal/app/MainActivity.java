@@ -15,7 +15,6 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(StreamingHttpPlugin.class);
         registerPlugin(SecureStorePlugin.class);
         registerPlugin(OrientationPlugin.class);
-        registerPlugin(TextRecognitionPlugin.class);
         registerPlugin(IntegrityPlugin.class);
         super.onCreate(savedInstanceState);
         // A WebView is white until the page paints; in the page's own colour

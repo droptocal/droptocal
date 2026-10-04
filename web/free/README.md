@@ -6,9 +6,11 @@ Workers AI (Gemma 4 26B, thinking off) behind an OpenAI-compatible route at
 and decides everything that costs anything: the model, how long a question
 may be, how long an answer.
 
-In the app a photo is read on the phone first (ML Kit, see
-`TextRecognitionPlugin`), so what arrives is usually text. A browser sends
-the picture, which the model reads too.
+Photos are sent as they are and the model reads them itself. Reading the
+words on the phone first (ML Kit) was tried and dropped: on real photos —
+an advertising pillar, a poster at night — it mixed neighbouring posters
+together or read nothing, while the model read the picture correctly, and a
+photo costs about as much as its text (~200 tokens at the size it is read).
 
 ## How it is rationed
 

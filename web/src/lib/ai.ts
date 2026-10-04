@@ -1,7 +1,6 @@
 import { activeEndpoint, apiHeaders, authSecret, chatUrl, styleInForce, usesFree, wantedModel } from './settings';
 import { fromMessage, messagesStreamPiece, toMessagesBody } from './anthropic';
 import { shrinkFurther } from './image';
-import { canReadOnDevice, readOnDevice } from './ocr';
 import { FreeLimit, forgetSession, freeToken } from './free';
 import { canFetchNatively, nativeFetch } from './native';
 import {
@@ -28,6 +27,7 @@ Rules:
 - Dates are usually written in the source's own language and locale. German/European sources use day.month.year; US sources use month/day/year. Use the surrounding language to decide.
 - If a source gives a weekday and a day/month but no year, pick the year that makes the weekday match, preferring the nearest such date that is not in the past relative to the reference date given by the user.
 - Times may be written as "20 Uhr", "8pm", "20:00", "Einlass 19:00 / Beginn 20:00". Use the start of the event itself, and mention a doors time in the description.
+- A date with a two-digit year, such as "28.09.26" or "09.10.26", is day.month.year — 28 September 2026. No part of it is a time: a time is written with a colon, "Uhr", "h" or am/pm, apart from the date.
 - If only a date and no time is given, set all_day true.
 - A source may list several events (a festival programme, a series). Return each as its own object.
 - When several events each name their own place, every event keeps the place printed with its own date. Never carry one event's venue over to the next.
@@ -550,7 +550,9 @@ const clip = (value: string | undefined, max: number): string => {
  * "20 Uhr", "8pm". Only asked for when the model said the event is not all
  * day and then gave no time — its own answer says a time was there.
  */
-function timeIn(text: string): string {
+export function timeIn(text: string): string {
+  // "28.09.26" holds "09.26", which is a date and not twenty-six past nine.
+  text = text.replace(DOTTED_DATE, ' ');
   const clock = /\b([01]?\d|2[0-3])[:.h]([0-5]\d)\b/.exec(text);
   if (clock) return `${clock[1].padStart(2, '0')}:${clock[2]}`;
   const uhr = /\b([01]?\d|2[0-3])\s*Uhr\b/i.exec(text);
@@ -561,6 +563,27 @@ function timeIn(text: string): string {
     return `${String(hour).padStart(2, '0')}:${ampm[2] ?? '00'}`;
   }
   return '';
+}
+
+/** A date written day.month.year with dots, two-digit year or four. */
+const DOTTED_DATE = /\b\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2})\b/g;
+
+/**
+ * Whether a time is really two numbers out of a date beside it. Measured on
+ * a concert poster: "28.09.26 | HALLE 622" came back as 09:26, "09.10.26" as
+ * 09:10 — a smaller model reads a two-digit year as minutes. The prompt says
+ * otherwise, and this catches it when it happens anyway: the time's digits
+ * are a pair from a dotted date in what the date was read from, and the same
+ * words name no such time outside that date.
+ */
+export function dateReadAsTime(time: string, text: string): boolean {
+  if (!time || !text) return false;
+  const [h, m] = time.split(':').map(Number);
+  const inDate = [...text.matchAll(DOTTED_DATE)].some(([date]) => {
+    const [d, mo, y] = date.split('.').map((part, i) => (i === 2 ? Number(part.slice(-2)) : Number(part)));
+    return (d === h && mo === m) || (mo === h && y === m);
+  });
+  return inDate && timeIn(text) !== time;
 }
 
 /** Words that mean "no note", which a model writes where it was told to leave it empty. */
@@ -580,8 +603,11 @@ function noteFor(raw: RawEvent): string {
 }
 
 function toDraft(raw: RawEvent, i: number): EventDraft {
-  const startTime =
-    normalizeTime(raw.start_time) || (raw.all_day === false ? timeIn(raw.source_text || '') : '');
+  const readTime = normalizeTime(raw.start_time);
+  const startTime = dateReadAsTime(readTime, raw.source_text || '')
+    ? ''
+    : readTime || (raw.all_day === false ? timeIn(raw.source_text || '') : '');
+  const readEnd = normalizeTime(raw.end_time);
   const timezone = (raw.timezone || '').trim();
   // An end that is the series' goes into the rule; then the first date the
   // rule really produces, with the event's own end moved along with it.
@@ -597,7 +623,7 @@ function toDraft(raw: RawEvent, i: number): EventDraft {
     startDate,
     startTime,
     endDate,
-    endTime: normalizeTime(raw.end_time),
+    endTime: startTime && !dateReadAsTime(readEnd, raw.source_text || '') ? readEnd : '',
     allDay: raw.all_day === true || !startTime,
     location: clip(raw.location, LIMITS.location),
     timezone: isValidZone(timezone) ? timezone : '',
@@ -1242,9 +1268,7 @@ export async function extractEvents(
   options: ExtractOptions = {},
 ): Promise<EventDraft[]> {
   if (usesFree(settings)) {
-    // The free API is asked with words: on the phone a picture is read first.
-    if (canReadOnDevice()) source = await readOnDevice(source);
-    // And with the start of a long page rather than all of it. An event page
+    // The free API is asked with the start of a long page rather than all of it. An event page
     // says what and when near the top; a whole Wikipedia article cost ten
     // posters' worth of the allowance everyone shares.
     if (source.text.length > FREE_TEXT_CHARS) {

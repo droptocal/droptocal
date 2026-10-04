@@ -108,10 +108,6 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
-    // Reads the words in a photo on the phone itself (TextRecognitionPlugin),
-    // so the free API is sent text rather than the picture. The model ships
-    // inside the app: no download, and no Play services needed.
-    implementation "com.google.mlkit:text-recognition:16.0.1"
     // Play's word that this is the app it installed (IntegrityPlugin), for
     // the free API's larger ration.
     implementation "com.google.android.play:integrity:1.6.0"

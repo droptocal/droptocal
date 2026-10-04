@@ -8,11 +8,28 @@ routes = [{ pattern = "api.droptocal.org", custom_domain = true }]
 [ai]
 binding = "AI"
 
-# Per caller (IP), per minute. Workers' own limiter: no storage, no cost.
+# Per caller (IP), per minute: a burst waits. Workers' own limiter, no cost.
 [[ratelimits]]
 name = "LIMIT"
 namespace_id = "1001"
 simple = { limit = 10, period = 60 }
+
+# Sessions and today's counts (see Quota in free.js).
+[[durable_objects.bindings]]
+name = "QUOTA"
+class_name = "Quota"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Quota"]
+
+# The limits live in free.js (DEFAULTS, TIERS); any can be set here instead,
+# PER_DAY_PLAY, PER_DAY_WEB and PER_DAY_NONE for the rations.
+# REQUIRE_PROOF = "1" serves only installations Play Integrity or Turnstile
+# vouched for. Secrets, set with `wrangler secret put`, when there are any:
+#   PLAY_INTEGRITY_SA  the service account's JSON key, whole
+#   TURNSTILE_SECRET   the Turnstile widget's secret key
+[vars]
 
 # Request logs kept in the dashboard, so the cost per scan can be read back.
 [observability]

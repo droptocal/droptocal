@@ -36,6 +36,10 @@ jobs:
         working-directory: web
       - name: Build
         run: npm run build
+        env:
+          # Repository variables (not secrets): the free API's proof, once set up.
+          VITE_PLAY_CLOUD_PROJECT: ${{ vars.PLAY_CLOUD_PROJECT }}
+          VITE_TURNSTILE_SITEKEY: ${{ vars.TURNSTILE_SITEKEY }}
         working-directory: web
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

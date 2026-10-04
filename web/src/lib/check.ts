@@ -1,7 +1,7 @@
 import { extractEvents } from './ai';
 import { canFetchNatively, inNativeApp, nativeFetch } from './native';
 import { providerFor } from './providers';
-import { activeEndpoint, apiHeaders, authSecret, styleInForce, trying, wantedModel } from './settings';
+import { activeEndpoint, apiHeaders, authSecret, styleInForce, trying, usesFree, wantedModel } from './settings';
 import type { Settings } from './types';
 
 /**
@@ -104,7 +104,7 @@ export async function checkConnection(settings: Settings, onLine: (lines: CheckL
     say({ label: 'API address', state: 'fail', detail: 'none given' });
     return lines;
   }
-  if (!authSecret(settings)) say({ label: 'API key', state: 'warn', detail: 'none given — only an API that needs none will answer' });
+  if (!usesFree(settings) && !authSecret(settings)) say({ label: 'API key', state: 'warn', detail: 'none given — only an API that needs none will answer' });
 
   const list = await listModels(settings);
   if (!list.ok) {

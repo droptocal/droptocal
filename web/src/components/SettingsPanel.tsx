@@ -167,8 +167,8 @@ export function SettingsPanel({ settings, onSave, onClose }: Props) {
             {app
               ? 'Photos are read on this phone; only the words go to DropToCal’s free API (Cloudflare Workers AI). '
               : 'Your text, links and pictures go to DropToCal’s free API (Cloudflare Workers AI). '}
-            Nothing is stored or used for training. It is shared by everyone, so it has a limit — choose
-            a provider of your own for more.
+            Nothing is stored or used for training. It is shared by everyone, so each device gets
+            about 20 reads a day — choose a provider of your own for more.
           </p>
         ) : (
           <>

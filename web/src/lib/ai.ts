@@ -2,6 +2,7 @@ import { activeEndpoint, apiHeaders, authSecret, chatUrl, styleInForce, usesFree
 import { fromMessage, messagesStreamPiece, toMessagesBody } from './anthropic';
 import { shrinkFurther } from './image';
 import { canReadOnDevice, readOnDevice } from './ocr';
+import { FreeLimit, forgetSession, freeToken } from './free';
 import { canFetchNatively, nativeFetch } from './native';
 import {
   FRESH,
@@ -318,6 +319,9 @@ function complaint(body: string): string {
  *  sent is to blame, so it is reported as found rather than second-guessed. */
 class ReachError extends Error {}
 
+/** About 5,000 tokens: what the free API is sent of a long text. */
+const FREE_TEXT_CHARS = 20000;
+
 /** How Android says an address did not resolve. */
 const UNRESOLVED = /UnknownHost|Unable to resolve host|No address associated/i;
 
@@ -327,6 +331,8 @@ export interface ExtractOptions {
   onProgress?: (preview: { title: string; date: string }) => void;
   /** Something worth knowing that did not stop the run. */
   onNote?: (note: string) => void;
+  /** Set on the one retry after the free API's session was renewed. */
+  renewed?: boolean;
 }
 
 const NO_ENDPOINT =
@@ -928,7 +934,9 @@ async function callModel(
     );
   }
 
-  const code = authSecret(settings);
+  // The free API's key is a session of this installation's own (free.ts).
+  const free = usesFree(settings);
+  const code = free ? await freeToken() : authSecret(settings);
 
   /**
    * Built before the request rather than inside it. This used to sit in the
@@ -1010,6 +1018,15 @@ async function callModel(
     const detail = whole.slice(0, 400);
     let message = '';
     message = complaint(whole) || complaint(detail);
+    if (free) {
+      // A lapsed session is opened again and the same request asked once more.
+      if (res.status === 401 && !options.renewed) {
+        forgetSession();
+        return callModel(content, settings, attempt, { ...options, renewed: true }, stream, cap, quirks);
+      }
+      // Today's ration, or too much at once: no other way of asking changes it.
+      if (res.status === 429 || res.status === 413) throw new FreeLimit(message || 'The free API is busy. Try again later.');
+    }
     // One parameter named as the trouble is worth asking again without.
     const refused = refusedParam(res.status, whole, sent);
     if (refused) throw new ParamRefused(refused, message || `The API refused ${refused}.`);
@@ -1224,8 +1241,17 @@ export async function extractEvents(
   settings: Settings,
   options: ExtractOptions = {},
 ): Promise<EventDraft[]> {
-  // The free API is asked with words: on the phone a picture is read first.
-  if (usesFree(settings) && canReadOnDevice()) source = await readOnDevice(source);
+  if (usesFree(settings)) {
+    // The free API is asked with words: on the phone a picture is read first.
+    if (canReadOnDevice()) source = await readOnDevice(source);
+    // And with the start of a long page rather than all of it. An event page
+    // says what and when near the top; a whole Wikipedia article cost ten
+    // posters' worth of the allowance everyone shares.
+    if (source.text.length > FREE_TEXT_CHARS) {
+      source = { ...source, text: source.text.slice(0, FREE_TEXT_CHARS) };
+      options.onNote?.('This is a long page, and only the first part of it was read.');
+    }
+  }
   const hasText = source.text.trim().length >= 40;
   if (hasText) {
     const found = await runPass(source, settings, false, options);
@@ -1251,7 +1277,7 @@ export async function extractEvents(
         );
       }
     }
-    if ((err as Error).name === 'AbortError' || err instanceof ReachError) throw err;
+    if ((err as Error).name === 'AbortError' || err instanceof ReachError || err instanceof FreeLimit) throw err;
     if (source.images.length === 0) throw err;
     // Text just worked for other sources, so a failure only on the pass that
     // carries pictures points at the model rather than at this request. Which

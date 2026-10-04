@@ -1,6 +1,6 @@
 import { describeReach, reachEndpoint } from './reach';
 import { fromMessage, messagesStreamPiece, toMessagesBody } from './anthropic';
-import { activeEndpoint, apiHeaders, authSecret, chatUrl, wantedModel } from './settings';
+import { activeEndpoint, apiHeaders, authSecret, chatUrl, styleInForce, wantedModel } from './settings';
 import type { Settings } from './types';
 
 /**
@@ -249,7 +249,7 @@ export async function diagnose(settings: Settings, onLine: (line: string) => voi
     `DropToCal API report — ${new Date().toISOString()}`,
     `build    ${__BUILD__} UTC`,
     `api      ${activeEndpoint(settings) || '(none configured)'}`,
-    `style    ${settings.apiStyle === 'anthropic' ? "Anthropic's Messages API" : 'OpenAI Chat Completions'}`,
+    `style    ${styleInForce(settings) === 'anthropic' ? "Anthropic's Messages API" : 'OpenAI Chat Completions'}`,
     `model    ${settings.model.trim() || '(none named)'}`,
     `photos   ${settings.visionModel.trim() || '(the same model)'}`,
     `key      ${authSecret(settings) ? 'set' : 'not set'}`,
@@ -286,7 +286,7 @@ export async function diagnose(settings: Settings, onLine: (line: string) => voi
   }
 
   const auth = apiHeaders(settings);
-  const anthropic = settings.apiStyle === 'anthropic';
+  const anthropic = styleInForce(settings) === 'anthropic';
   let models: string[] = [];
   let imageWorks = false;
 

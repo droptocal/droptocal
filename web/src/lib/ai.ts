@@ -1,6 +1,7 @@
-import { activeEndpoint, apiHeaders, authSecret, chatUrl, settingsInForce, wantedModel } from './settings';
+import { activeEndpoint, apiHeaders, authSecret, chatUrl, styleInForce, usesFree, wantedModel } from './settings';
 import { fromMessage, messagesStreamPiece, toMessagesBody } from './anthropic';
 import { shrinkFurther } from './image';
+import { canReadOnDevice, readOnDevice } from './ocr';
 import { canFetchNatively, nativeFetch } from './native';
 import {
   FRESH,
@@ -938,7 +939,7 @@ async function callModel(
    */
   let body: string;
   let sent: Param[] = [];
-  const anthropic = settingsInForce().apiStyle === 'anthropic';
+  const anthropic = styleInForce() === 'anthropic';
   try {
     const built = requestBody(content, attempt, stream, cap, quirks);
     // Anthropic's API is spoken through a translation of the same request,
@@ -1223,6 +1224,8 @@ export async function extractEvents(
   settings: Settings,
   options: ExtractOptions = {},
 ): Promise<EventDraft[]> {
+  // The free API is asked with words: on the phone a picture is read first.
+  if (usesFree(settings) && canReadOnDevice()) source = await readOnDevice(source);
   const hasText = source.text.trim().length >= 40;
   if (hasText) {
     const found = await runPass(source, settings, false, options);

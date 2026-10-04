@@ -1,7 +1,7 @@
 import { extractEvents } from './ai';
 import { canFetchNatively, inNativeApp, nativeFetch } from './native';
 import { providerFor } from './providers';
-import { activeEndpoint, apiHeaders, authSecret, trying, wantedModel } from './settings';
+import { activeEndpoint, apiHeaders, authSecret, styleInForce, trying, wantedModel } from './settings';
 import type { Settings } from './types';
 
 /**
@@ -27,7 +27,7 @@ export async function listModels(settings: Settings): Promise<ModelList> {
   let res: Response;
   const native = canFetchNatively();
   // Anthropic lists twenty at a time unless asked for more.
-  const list = `${base}/models${settings.apiStyle === 'anthropic' ? '?limit=1000' : ''}`;
+  const list = `${base}/models${styleInForce(settings) === 'anthropic' ? '?limit=1000' : ''}`;
   try {
     res = await (native ? nativeFetch : fetch)(list, { headers: apiHeaders(settings) });
   } catch (err) {

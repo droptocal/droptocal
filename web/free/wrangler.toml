@@ -1,0 +1,19 @@
+name = "droptocal-free"
+main = "free.js"
+compatibility_date = "2025-01-01"
+
+# Served at api.droptocal.org rather than a workers.dev address.
+routes = [{ pattern = "api.droptocal.org", custom_domain = true }]
+
+[ai]
+binding = "AI"
+
+# Per caller (IP), per minute. Workers' own limiter: no storage, no cost.
+[[ratelimits]]
+name = "LIMIT"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }
+
+# Request logs kept in the dashboard, so the cost per scan can be read back.
+[observability]
+enabled = true

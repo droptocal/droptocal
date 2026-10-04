@@ -15,6 +15,8 @@ interface Props {
 
 export function SettingsPanel({ settings, onSave, onClose }: Props) {
   const [apiBase, setApiBase] = useState(settings.apiBase);
+  /** No API of one's own: DropToCal's free one is asked (free/). */
+  const [free, setFree] = useState(!settings.apiBase.trim());
   const [apiStyle, setApiStyle] = useState<ApiStyle>(settings.apiStyle);
   const [apiKey, setApiKey] = useState(settings.apiKey);
   const [model, setModel] = useState(settings.model);
@@ -33,7 +35,7 @@ export function SettingsPanel({ settings, onSave, onClose }: Props) {
   /** The advice below is a browser's; this app is not always one. */
   const app = inNativeApp();
   const edited = (): Settings => ({
-    apiBase,
+    apiBase: free ? '' : apiBase,
     apiStyle,
     apiKey,
     model,
@@ -142,19 +144,16 @@ export function SettingsPanel({ settings, onSave, onClose }: Props) {
         <label>
           Provider
           <select
-            value={provider?.id ?? (apiBase.trim() ? 'custom' : '')}
+            value={free ? 'free' : (provider?.id ?? 'custom')}
             onChange={(e) => {
               const chosen = PROVIDERS.find((p) => p.id === e.target.value);
+              setFree(e.target.value === 'free');
               setApiBase(chosen ? chosen.base : '');
               setApiStyle(chosen ? chosen.style : 'openai');
               setModels([]);
             }}
           >
-            {!apiBase.trim() && !provider && (
-              <option value="" disabled>
-                Choose a provider…
-              </option>
-            )}
+            <option value="free">DropToCal free — nothing to set up</option>
             {PROVIDERS.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -163,6 +162,16 @@ export function SettingsPanel({ settings, onSave, onClose }: Props) {
             <option value="custom">Other — type the address</option>
           </select>
         </label>
+        {free ? (
+          <p className="hint">
+            {app
+              ? 'Photos are read on this phone; only the words go to DropToCal’s free API (Cloudflare Workers AI). '
+              : 'Your text, links and pictures go to DropToCal’s free API (Cloudflare Workers AI). '}
+            Nothing is stored or used for training. It is shared by everyone, so it has a limit — choose
+            a provider of your own for more.
+          </p>
+        ) : (
+          <>
         {provider && !provider.browser && !app && (
           <p className="hint warn">
             {provider.name} does not let web pages call it, so it will not work here. OpenAI,
@@ -210,6 +219,8 @@ export function SettingsPanel({ settings, onSave, onClose }: Props) {
           A photo goes to the second one; text and PDFs to the first. Leave it empty if the
           same model reads both — many read only one.
         </p>
+          </>
+        )}
 
         {/* In the app the phone reads a link itself; only a browser needs someone to ask. */}
         {!app && (

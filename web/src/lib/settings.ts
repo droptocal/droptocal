@@ -218,8 +218,23 @@ export const settingsInForce = (): Settings => inForce;
  * /v1, and the path is added like any client would.
  */
 export function activeEndpoint(s: Settings = inForce): string {
-  return s.apiBase.trim().replace(/\/+$/, '');
+  return s.apiBase.trim().replace(/\/+$/, '') || FREE_API;
 }
+
+/**
+ * DropToCal's own free API (free/), asked whenever nobody has set up one of
+ * their own: Workers AI behind an OpenAI-compatible route, holding no key and
+ * choosing the model itself. Overridable at build time for a test deployment.
+ */
+export const FREE_API: string =
+  (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_FREE_API?.replace(/\/+$/, '') ||
+  'https://api.droptocal.org/v1';
+
+/** Whether the free API is the one being asked. */
+export const usesFree = (s: Settings = inForce): boolean => !s.apiBase.trim();
+
+/** The dialect in force: the free API speaks OpenAI's, whatever is stored. */
+export const styleInForce = (s: Settings = inForce): ApiStyle => (usesFree(s) ? 'openai' : s.apiStyle);
 
 /** The key, whichever header it travels in. */
 export const authSecret = (s: Settings = inForce): string => s.apiKey.trim();
@@ -234,7 +249,7 @@ function styleOf(stored: unknown, base: string): ApiStyle {
 /** Where a request for an answer goes. */
 export function chatUrl(s: Settings = inForce): string {
   const base = activeEndpoint(s);
-  if (s.apiStyle === 'anthropic') return base.endsWith('/messages') ? base : `${base}/messages`;
+  if (styleInForce(s) === 'anthropic') return base.endsWith('/messages') ? base : `${base}/messages`;
   return base.endsWith('/chat/completions') ? base : `${base}/chat/completions`;
 }
 
@@ -245,7 +260,7 @@ export function chatUrl(s: Settings = inForce): string {
  * changes nothing there.
  */
 export function apiHeaders(s: Settings = inForce, key = authSecret(s)): Record<string, string> {
-  if (s.apiStyle === 'anthropic') {
+  if (styleInForce(s) === 'anthropic') {
     return {
       ...(key ? { 'x-api-key': key } : {}),
       'anthropic-version': ANTHROPIC_VERSION,
@@ -264,6 +279,8 @@ export function apiHeaders(s: Settings = inForce, key = authSecret(s)): Record<s
  * good answer where the same model reads both.
  */
 export const wantedModel = (forImage = false, s: Settings = inForce): string => {
+  // The free API picks its own model and answers to any name.
+  if (usesFree(s)) return 'free';
   const vision = s.visionModel.trim();
   return forImage && vision ? vision : s.model.trim();
 };

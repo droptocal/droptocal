@@ -344,6 +344,11 @@ export function SettingsPanel({ settings, onSave, onClose }: Props) {
           Build {__BUILD__} UTC ·{' '}
           <a href="https://droptocal.org/privacy" target="_blank" rel="noreferrer">
             Privacy
+          </a>{' '}
+          ·{' '}
+          {/* The AGPL asks that whoever uses it over a network can get its source. */}
+          <a href="https://github.com/droptocal/droptocal" target="_blank" rel="noreferrer">
+            Source (AGPL)
           </a>
         </p>
 

@@ -12,5 +12,8 @@ It runs at **[droptocal.org](https://droptocal.org)** and as an Android app.
 | [`app/`](app) | The Android shell around `web/`, for what a browser cannot do: the share sheet, the selection menu, handing an event to the calendar app, calling any API directly. |
 | [`.github/workflows/`](.github/workflows) | The website on every change to `web/`, an APK on every change to either, and a release (APK and Play bundle) for every `v*` tag. |
 
+Licence: [AGPL-3.0-or-later](LICENSE) — use it, change it, share it; what is
+built on it, hosted or shipped, stays open too.
+
 Privacy: [droptocal.org/privacy](https://droptocal.org/privacy). Contact:
 hello@droptocal.org.

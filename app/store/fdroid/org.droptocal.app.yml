@@ -9,7 +9,7 @@
 
 Categories:
   - Calendar & Agenda
-License: TODO  # no licence in the repository yet; F-Droid requires one
+License: AGPL-3.0-or-later
 AuthorName: DropToCal
 AuthorEmail: hello@droptocal.org
 WebSite: https://droptocal.org

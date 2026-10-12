@@ -2,6 +2,7 @@
   "name": "droptocal-app",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "description": "The native shell around DropToCal: the same web app, in an app.",
   "type": "module",
   "scripts": {

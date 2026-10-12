@@ -113,9 +113,9 @@ npm run web      # builds ../web into www/
 npx cap sync     # copies www/ into both native projects
 ```
 
-Nothing about the API is built in. Whoever installs it enters an
-OpenAI-compatible API, its key and a model in Settings, and the key stays on
-the device, encrypted.
+No key is built in. The app reads with DropToCal's free API until someone
+enters an API of their own in Settings; that key stays on the device,
+encrypted.
 
 ### Android
 

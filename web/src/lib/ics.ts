@@ -5,7 +5,7 @@ import type { EventDraft } from './types';
 function escapeText(value: string): string {
   return value
     .replace(/\\/g, '\\\\')
-    .replace(/;/g, '\;')
+    .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
     .replace(/\r?\n/g, '\\n');
 }
@@ -44,6 +44,14 @@ export function addHours(time: string, hours: number): string {
   const [h, m] = time.split(':').map(Number);
   return `${String((h + hours) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
+
+/**
+ * The event as every calendar route sends it. An event with no start time is
+ * all day, whatever the box says: unticking All day before typing a time
+ * would otherwise send a start at "T00", which no calendar reads.
+ */
+export const settled = (event: EventDraft): EventDraft =>
+  event.allDay || event.startTime ? event : { ...event, allDay: true };
 
 /** The end a user did not supply: two hours later, rolling past midnight. */
 export function resolvedEnd(event: EventDraft): { date: string; time: string } {
@@ -128,15 +136,6 @@ function slug(value: string): string {
   );
 }
 
-/**
- * A link a phone will recognise. Served over https as text/calendar by the
- * endpoint, which is what makes an OS offer to open it in a calendar app —
- * a blob: URL with a download attribute only produces a file in Downloads
- * that nothing volunteers to handle.
- *
- * Returns '' when the calendar is too big to travel in a URL, or when there is
- * no endpoint to serve it; callers fall back to downloading it directly.
- */
 /** The file's name, without the extension: the event's, or "events". */
 export function icsName(events: EventDraft[]): string {
   return events.length === 1 ? slug(events[0].title) : 'events';

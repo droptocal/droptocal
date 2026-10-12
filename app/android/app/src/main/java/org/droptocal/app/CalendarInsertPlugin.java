@@ -5,7 +5,6 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.provider.CalendarContract;
 import android.provider.MediaStore;
 import androidx.core.content.FileProvider;
@@ -131,13 +130,7 @@ public class CalendarInsertPlugin extends Plugin {
         }
         Uri uri;
         try {
-            File dir = new File(getContext().getCacheDir(), "events");
-            if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("no cache");
-            File file = new File(dir, (name.isEmpty() ? "event" : name) + ".ics");
-            try (FileOutputStream out = new FileOutputStream(file)) {
-                out.write(content.getBytes(StandardCharsets.UTF_8));
-            }
-            uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", file);
+            uri = cached(name, content);
         } catch (Exception unwritable) {
             call.reject("The calendar file could not be written.");
             return;
@@ -151,16 +144,7 @@ public class CalendarInsertPlugin extends Plugin {
             getActivity().startActivity(view);
             result.put("opened", "calendar");
         } catch (ActivityNotFoundException noImporter) {
-            Intent send = new Intent(Intent.ACTION_SEND)
-                .setType("text/calendar")
-                .putExtra(Intent.EXTRA_STREAM, uri)
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            try {
-                getActivity().startActivity(Intent.createChooser(send, null));
-                result.put("opened", "share");
-            } catch (ActivityNotFoundException nowhere) {
-                result.put("opened", "");
-            }
+            result.put("opened", share(uri) ? "share" : "");
         }
         call.resolve(result);
     }
@@ -176,8 +160,9 @@ public class CalendarInsertPlugin extends Plugin {
      * phone keeps downloads and says where that was.
      *
      * Through MediaStore from Android 10 on, which needs no permission and
-     * puts the file where the Files app will show it; below that the public
-     * Downloads directory is still writable directly.
+     * puts the file where the Files app will show it. Below that Downloads
+     * takes a storage permission this app does not ask for, so the share
+     * sheet takes the file instead — to Files, Drive or mail.
      */
     @PluginMethod
     public void saveFile(PluginCall call) {
@@ -204,19 +189,38 @@ public class CalendarInsertPlugin extends Plugin {
                 }
                 result.put("saved", file);
             } else {
-                File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("no Downloads");
-                File target = new File(dir, file);
-                try (FileOutputStream out = new FileOutputStream(target)) {
-                    out.write(content.getBytes(StandardCharsets.UTF_8));
-                }
-                result.put("saved", file);
+                result.put("saved", share(cached(name, content)) ? file : "");
             }
         } catch (Exception unwritable) {
-            // The web side falls back to asking the endpoint for it, so this
-            // is an answer rather than a failure.
+            // The web side falls back to a download, so this is an answer
+            // rather than a failure.
             result.put("saved", "");
         }
         call.resolve(result);
+    }
+
+    /** The calendar in the app's cache, as a URI another app may be granted. */
+    private Uri cached(String name, String content) throws Exception {
+        File dir = new File(getContext().getCacheDir(), "events");
+        if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("no cache");
+        File file = new File(dir, (name.isEmpty() ? "event" : name) + ".ics");
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            out.write(content.getBytes(StandardCharsets.UTF_8));
+        }
+        return FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", file);
+    }
+
+    /** The share sheet, for a file nothing opens directly. */
+    private boolean share(Uri uri) {
+        Intent send = new Intent(Intent.ACTION_SEND)
+            .setType("text/calendar")
+            .putExtra(Intent.EXTRA_STREAM, uri)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        try {
+            getActivity().startActivity(Intent.createChooser(send, null));
+            return true;
+        } catch (ActivityNotFoundException nowhere) {
+            return false;
+        }
     }
 }

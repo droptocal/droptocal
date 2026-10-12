@@ -1,12 +1,13 @@
 # DropToCal
 
 Point it at an event poster — a photo, a screenshot, a PDF or a link — and get a
-calendar file back. An OpenAI-compatible model reads the dates; you check them; the
-app writes the `.ics`.
+calendar event back. An AI model reads the dates; you check them; the event goes
+into your calendar.
 
 It runs at **[droptocal.org](https://droptocal.org)**, and as an Android app.
-Everything runs in the browser, or in the app. There is no backend: it calls
-an OpenAI-compatible API of your choosing, with your own key.
+Everything runs in the browser, or in the app. Out of the box it reads with
+DropToCal's free API (`free/`, Workers AI, rationed per device); with your own
+key it calls any OpenAI-compatible API, or Anthropic's, directly.
 
 The whole point is the step count. Share a poster in, glance at one line, tap
 Add — the calendar app opens with the event already filled in.
@@ -53,8 +54,9 @@ paste / drop ───┘                                │                    
   pipeline; elsewhere it is a video frame, and the app says so if that comes
   out too soft to read. The system camera stays one tap away inside the
   viewfinder, and is used outright where `getUserMedia` is unavailable.
-- **Three ways into a calendar, none of them preferred**: the calendar file,
-  a Google deep link and an Outlook one.
+- **One main button, the rest behind ▾**: in the app the main button opens
+  the phone's calendar with the event filled in; in a browser it downloads
+  the calendar file. The ▾ holds the file, Google and Outlook.
 
   A web page cannot put an event straight into a phone's calendar app on
   Android. Chromium adds `CATEGORY_BROWSABLE` to any intent a page launches,
@@ -107,7 +109,8 @@ find the poster again. So it is also a target.
 
 ## Configuration
 
-Everything is in Settings, and nothing is built in:
+Nothing needs setting up: with no API of your own, the free API is asked.
+For more, or a model of your choice, Settings takes:
 
 | Setting | What it is |
 | --- | --- |
@@ -168,8 +171,8 @@ GitHub Pages project subpath and from a native WebView.
 ## Deploy
 
 `.github/workflows/deploy.yml` (at the repository's root) builds and publishes on every
-push to `main` that changes `web/`, to droptocal.org. Nothing is baked in: every setting
-is made in the app.
+push to `main` that changes `web/`, to droptocal.org. No key is baked in: the free API
+holds none, and anyone's own is entered in the app.
 
 ## The app
 

@@ -15,7 +15,7 @@ export function formatWhen(event: EventDraft): string {
     month: 'short',
     year: at.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
   });
-  if (event.allDay) return `${date} · all day`;
+  if (event.allDay || !event.startTime) return `${date} · all day`;
 
   const time = at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   return `${date}, ${time}`;

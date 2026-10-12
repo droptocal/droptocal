@@ -9,7 +9,7 @@ import {
   saveCalendarFileInApp,
 } from '../lib/native';
 import { describeRrule, formatWhen } from '../lib/format';
-import { downloadIcs } from '../lib/ics';
+import { downloadIcs, settled } from '../lib/ics';
 import { Icon } from './Icon';
 import type { EventDraft } from '../lib/types';
 
@@ -201,7 +201,8 @@ function AddButton({
  * those URLs and not a choice — so with several selected only the file can
  * carry them all.
  */
-export function Destinations({ events, children }: { events: EventDraft[]; children?: React.ReactNode }) {
+export function Destinations({ events: drafts, children }: { events: EventDraft[]; children?: React.ReactNode }) {
+  const events = drafts.map(settled);
   const single = events.length === 1 ? events[0] : null;
   const calendarApp = useCalendarApp();
 
@@ -341,7 +342,8 @@ export function EventRow({ event, selectable, selected, onToggle, onChange, onRe
               <input
                 type="date"
                 value={event.startDate}
-                onChange={(e) => set('startDate', e.target.value)}
+                // Cleared, there is no event left to add; the date stays.
+                onChange={(e) => e.target.value && set('startDate', e.target.value)}
               />
             </label>
             <label>

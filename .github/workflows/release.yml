@@ -5,9 +5,6 @@ name: Release
 # signing key, and the bundle for Google Play, signed with the upload key.
 # All three go on a GitHub Release of the same name. The tag must match
 # versionName and versionCode in android/app/build.gradle; bump them first.
-#
-# Whoever installs it brings their own OpenAI-compatible API, which Settings
-# opens on first run.
 on:
   push:
     tags: ['v*']
@@ -131,7 +128,7 @@ jobs:
             echo "- \`droptocal-${TAG#v}-foss.apk\`: the same without Play Integrity, as F-Droid builds it. Installs over either."
             echo "- \`droptocal-${TAG#v}-play.aab\`: for Google Play."
             echo
-            echo "Settings asks for an AI provider (OpenAI-compatible, or Anthropic) and a key on first run."
+            echo "Reads with the free AI model out of the box; an API key of your own goes in Settings."
             echo
             echo "Commit \`${WEB_COMMIT}\`. APK key \`${APK_KEY}\`, bundle key \`${AAB_KEY}\`."
           } > notes.md

@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'An existing tag to build, e.g. v1.0.0'
+        description: 'The tag to build, e.g. v1.2.0; made on the chosen branch if it does not exist'
         required: true
 
 permissions:
@@ -27,8 +27,6 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.tag || github.ref }}
 
       - uses: actions/setup-node@v7
         with:
@@ -42,6 +40,23 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+
+      # Run by hand: build the tag if it exists, otherwise check the chosen
+      # branch against build.gradle and tag it here. A tag pushed with this
+      # token starts no second run.
+      - name: Find or make the tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            git fetch -q origin "refs/tags/$TAG:refs/tags/$TAG"
+            git checkout -q "$TAG"
+          else
+            node scripts/version.mjs check "$TAG"
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git tag -a "$TAG" -m "DropToCal ${TAG#v}"
+            git push origin "$TAG"
+          fi
 
       - run: npm ci
 

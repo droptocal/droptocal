@@ -1,0 +1,1 @@
+First release on F-Droid. Installs over the GitHub and Play builds, and they over it.

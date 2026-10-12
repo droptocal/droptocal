@@ -3,6 +3,7 @@ package org.droptocal.app;
 import android.os.Bundle;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.Plugin;
 
 public class MainActivity extends BridgeActivity {
 
@@ -15,7 +16,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(StreamingHttpPlugin.class);
         registerPlugin(SecureStorePlugin.class);
         registerPlugin(OrientationPlugin.class);
-        registerPlugin(IntegrityPlugin.class);
+        for (Class<? extends Plugin> plugin : Flavor.PLUGINS) registerPlugin(plugin);
         super.onCreate(savedInstanceState);
         // A WebView is white until the page paints; in the page's own colour
         // the gap between the splash and the app is not a flash.

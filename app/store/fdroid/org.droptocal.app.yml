@@ -1,0 +1,59 @@
+# F-Droid metadata for DropToCal: what goes into a merge request to
+# https://gitlab.com/fdroid/fdroiddata as metadata/org.droptocal.app.yml.
+# Kept here so it changes with the build it describes. Descriptions,
+# screenshots and changelogs come from fastlane/ at the repository's root.
+#
+# F-Droid builds the foss flavour from the tag, compares it with the
+# -foss.apk attached to the GitHub release, and if they match ships ours,
+# signed with our key, so it installs over the GitHub and Play builds.
+
+Categories:
+  - Calendar & Agenda
+License: TODO  # no licence in the repository yet; F-Droid requires one
+AuthorName: DropToCal
+AuthorEmail: hello@droptocal.org
+WebSite: https://droptocal.org
+SourceCode: https://github.com/droptocal/droptocal
+IssueTracker: https://github.com/droptocal/droptocal/issues
+Changelog: https://github.com/droptocal/droptocal/releases
+
+AntiFeatures:
+  NonFreeNet:
+    en-US: The free AI model runs on Cloudflare Workers AI. An AI provider of your own can replace it.
+
+RepoType: git
+Repo: https://github.com/droptocal/droptocal.git
+Binaries: https://github.com/droptocal/droptocal/releases/download/v%v/droptocal-%v-foss.apk
+
+AllowedAPKSigningKeys: 3f6821d36a7c0f98c3d7a3f2db242a3c3314635df347ee66c9e0fff52c1b21ff
+
+Builds:
+  - versionName: 1.2.0
+    versionCode: 10200000
+    commit: v1.2.0
+    subdir: app/android/app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-21-jdk-headless
+      - update-java-alternatives -a
+      # Capacitor 8 needs Node 22, newer than Debian's.
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v22.22.0/node-v22.22.0-linux-x64.tar.xz
+      - echo "9aa8e9d2298ab68c600bd6fb86a6c13bce11a4eca1ba9b39d79fa021755d7c37  node.tar.xz" | sha256sum -c -
+      - tar xJf node.tar.xz --strip-components=1 -C /usr/local
+    # The scanner reads build.gradle without knowing flavours; foss never uses it.
+    init: sed -i -e '/fullImplementation/d' build.gradle
+    gradle:
+      - foss
+    prebuild:
+      - cd ../..
+      - npm ci
+      - npm run web
+      - npx cap sync android
+    scandelete:
+      - app/node_modules
+      - web/node_modules
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+CurrentVersion: 1.2.0
+CurrentVersionCode: 10200000

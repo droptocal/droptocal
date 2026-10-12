@@ -120,7 +120,8 @@ the device, encrypted.
 ### Android
 
 GitHub's build is the one the phone runs. Every push to `main` that changes
-`web/` or `app/` builds the APK and stamps it with the commit.
+`web/` or `app/` builds the APK (`full`, see below) and stamps it with the
+commit.
 
 ```bash
 npm run install:latest   # GitHub's newest APK onto the connected phone
@@ -143,15 +144,22 @@ Actions and download the APK from the run's artifacts.
 
 ### Releases
 
+Bump `versionName` and `versionCode` in `android/app/build.gradle` first —
+1.3.0 is 10300000 (`node scripts/version.mjs check v1.3.0` says what is
+wanted) — then tag that commit:
+
 ```bash
-git tag v1.0.0 && git push origin v1.0.0
+git tag v1.3.0 && git push origin v1.3.0
 ```
 
-The tag runs the **Release** workflow: the web app — whoever installs it
-brings their own API, as with every build —
-then `droptocal-1.0.0.apk` signed with the release key, for installing directly,
-and `droptocal-1.0.0-play.aab` signed with the **upload key**, for Google Play.
-Both are attached to a GitHub Release of the same name.
+The tag runs the **Release** workflow, which refuses a tag that disagrees
+with build.gradle, and attaches to a GitHub Release of the same name:
+
+| File | Flavour | Signed with | For |
+| --- | --- | --- | --- |
+| `droptocal-1.3.0.apk` | full | release key | installing directly, Obtainium |
+| `droptocal-1.3.0-foss.apk` | foss | release key | F-Droid, IzzyOnDroid |
+| `droptocal-1.3.0-play.aab` | full | upload key | Google Play |
 
 The upload key is the second keystore in `~/.caldrop-signing/` (`upload.jks`,
 `upload.properties`; secrets `CALDROP_UPLOAD_KEYSTORE_BASE64` and
@@ -162,8 +170,33 @@ That keeps a Play install and a direct install interchangeable. The
 certificates Play asks for are `caldrop-release-certificate.pem` and
 `caldrop-upload-certificate.pem` in the same folder.
 
-Version codes are minutes since 2026-01-01, so every build, from either
-workflow, is newer than the one before it.
+**Version codes** follow the version: major × 10,000,000 + minor × 100,000 +
+patch × 1,000. A build between releases (GitHub's on every push, or
+`npm run apk`) is the last tag's code plus the commits since, so it is newer
+than the release before it and older than the next. `scripts/version.mjs`
+does the arithmetic. Builds before 1.2.0 counted minutes since 2026-01-01;
+every code since is higher.
+
+### Flavours: full and foss
+
+`full` is the app as GitHub and Play ship it. `foss` leaves out the one
+proprietary library, Play Integrity, which the free API uses to give an app
+installed from Play a larger daily ration; without it the page asks for the
+plain one. Both have the same ID and key, so either installs over the other.
+
+### F-Droid
+
+F-Droid builds `foss` from the tag. If its APK matches the `-foss.apk` on the
+GitHub release, it ships ours, signed with our key, so an F-Droid install and
+a direct one are interchangeable. For that the build has to be reproducible,
+which is why the web app's build stamp is the commit's time rather than the
+clock's, and why the release builds `foss` without the proof variables.
+
+The recipe is `store/fdroid/org.droptocal.app.yml`; it goes to F-Droid as a
+merge request to [fdroiddata](https://gitlab.com/fdroid/fdroiddata). The
+listing is `fastlane/` at the repository's root, which F-Droid reads from
+the tag: a changelog for a release goes in
+`fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
 
 ### iOS
 

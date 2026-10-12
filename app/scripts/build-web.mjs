@@ -34,11 +34,23 @@ function webCommit(dir) {
   }
 }
 
+function commitTime(dir) {
+  try {
+    return execFileSync('git', ['-C', dir, 'log', '-1', '--format=%ct'], { encoding: 'utf8' }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
 const dir = join(here, '..', 'web');
 const commit = webCommit(dir);
 console.log(`web app: commit ${commit}`);
 if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `commit=${commit}\n`);
 run('npm', [existsSync(join(dir, 'package-lock.json')) ? 'ci' : 'install'], dir);
+// The build stamp is the commit's time rather than the clock's, so a commit
+// always builds the same bundle: F-Droid rebuilds a release and ships our
+// signed APK only if its own build comes out identical.
+process.env.SOURCE_DATE_EPOCH ??= commitTime(dir);
 run('npm', ['run', 'build'], dir);
 rmSync(www, { recursive: true, force: true });
 cpSync(join(dir, 'dist'), www, { recursive: true });

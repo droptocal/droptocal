@@ -1,0 +1,32 @@
+DropToCal turns what you see into calendar events. Point the camera at a poster, share a flyer, a PDF, a web page or a chat message to it — and the dates, times and places are read for you and handed to your own calendar app, ready to save.
+
+WHAT IT READS
+• Posters and flyers, straight from the camera — several pages in a row if the programme spans more than one
+• Photos and screenshots you already have
+• PDFs: programmes, schedules, rehearsal plans
+• Links to event pages, and text shared from any app or selected on screen
+• Whatever is on the clipboard
+
+WHAT YOU GET
+• Every event on the page, not just the first: a festival programme becomes a list you can tick through
+• Repeating events understood: "every Tuesday", "first Friday of the month", "until 19 December"
+• The words each date was read from, shown beside it, so checking takes a glance
+• Times as printed — 20:00 on the poster is 20:00 in your calendar
+• One tap to your calendar app, with title, time, place and repeat filled in. Also as a calendar file, or for Google Calendar and Outlook
+
+FREE, NOTHING TO SET UP
+Install it and point the camera: DropToCal reads with a free AI model, about 20 reads a day per phone. It is a non-profit project, and the free model is shared fairly by everyone. The free model runs on Cloudflare Workers AI, which is not free software; your own provider can replace it.
+
+OR BRING YOUR OWN AI
+For more, or a model of your choice, use your own API key with OpenAI, Anthropic (Claude), OpenRouter, Mistral or any other OpenAI-compatible service. The app lists the models your key can use and tests the connection for you. You pay your provider directly, usually a fraction of a cent per poster.
+
+PRIVATE BY DESIGN
+• No account, no ads, no analytics, no tracking
+• Nothing you read is kept — not by us, and not by the free model, which is never trained on it
+• With your own provider, what you read goes straight from your phone to them, and your key stays on your phone, encrypted
+• Photos are not saved to your gallery
+• Open source: github.com/droptocal/droptocal
+
+DropToCal also runs in the browser at droptocal.org.
+
+Questions or ideas: hello@droptocal.org

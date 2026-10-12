@@ -1,8 +1,10 @@
 name: Release
 
 # A tag like v1.2.0 makes a release: the APK for anyone installing it
-# directly, signed with the app signing key, and the bundle for Google Play,
-# signed with the upload key. Both go on a GitHub Release of the same name.
+# directly and the foss APK (what F-Droid builds), both signed with the app
+# signing key, and the bundle for Google Play, signed with the upload key.
+# All three go on a GitHub Release of the same name. The tag must match
+# versionName and versionCode in android/app/build.gradle; bump them first.
 #
 # Whoever installs it brings their own OpenAI-compatible API, which Settings
 # opens on first run.
@@ -46,6 +48,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Check the tag against build.gradle
+        run: node scripts/version.mjs check "$TAG"
+
       - name: Build the web app into the shell
         id: web
         run: npm run web
@@ -71,31 +76,48 @@ jobs:
           UPLOAD_BASE64: ${{ secrets.CALDROP_UPLOAD_KEYSTORE_BASE64 }}
           UPLOAD_PASSWORD: ${{ secrets.CALDROP_UPLOAD_KEYSTORE_PASSWORD }}
 
-      # The version name is the tag without its v; the code is minutes since
-      # 2026-01-01, which rises across every workflow as Play requires.
+      # Version name and code as build.gradle has them, checked above.
       - name: Build the APK and the Play bundle
         working-directory: app/android
-        run: |
-          ./gradlew --no-daemon assembleRelease bundlePlay \
-            -PcaldropBuild="$(( ($(date -u +%s) - 1767225600) / 60 ))" \
-            -PcaldropVersion="${TAG#v}"
+        run: ./gradlew --no-daemon assembleFullRelease bundleFullPlay
         env:
           CALDROP_SIGNING: ${{ runner.temp }}/signing.properties
           CALDROP_UPLOAD_SIGNING: ${{ runner.temp }}/upload.properties
+          CALDROP_REQUIRE_SIGNING: '1'
+
+      # As F-Droid builds it: the web app without the proof variables, which
+      # F-Droid does not have, so its build and this one come out the same.
+      - name: Build the foss APK
+        run: |
+          npm run web
+          npx cap sync android
+          cd android && ./gradlew --no-daemon assembleFossRelease
+        env:
+          CALDROP_SIGNING: ${{ runner.temp }}/signing.properties
           CALDROP_REQUIRE_SIGNING: '1'
 
       - name: Check the keys, name the files
         id: files
         run: |
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
-          apk_key="$("$apksigner" verify --print-certs android/app/build/outputs/apk/release/app-release.apk | grep -m1 'SHA-256' | awk '{print $NF}')"
-          aab_key="$(keytool -printcert -jarfile android/app/build/outputs/bundle/play/app-play.aab | grep -m1 'SHA256:' | awk '{print $NF}')"
-          echo "APK signed with $apk_key; bundle with $aab_key"
-          # The APK must carry the app signing key every install trusts.
+          full=android/app/build/outputs/apk/full/release/app-full-release.apk
+          foss=android/app/build/outputs/apk/foss/release/app-foss-release.apk
+          aab=android/app/build/outputs/bundle/fullPlay/app-full-play.aab
+          apk_key="$("$apksigner" verify --print-certs "$full" | grep -m1 'SHA-256' | awk '{print $NF}')"
+          foss_key="$("$apksigner" verify --print-certs "$foss" | grep -m1 'SHA-256' | awk '{print $NF}')"
+          aab_key="$(keytool -printcert -jarfile "$aab" | grep -m1 'SHA256:' | awk '{print $NF}')"
+          echo "APKs signed with $apk_key and $foss_key; bundle with $aab_key"
+          # Both APKs must carry the app signing key every install trusts.
           test "$apk_key" = "3f6821d36a7c0f98c3d7a3f2db242a3c3314635df347ee66c9e0fff52c1b21ff"
+          test "$foss_key" = "$apk_key"
+          # Nothing of Play's in the foss APK, which F-Droid would refuse.
+          if "$(dirname "$apksigner")/dexdump" "$foss" | grep -qE 'Lcom/google/android/(play|gms)/'; then
+            echo "The foss APK contains Play or Play Services code."; exit 1
+          fi
           mkdir -p out
-          cp android/app/build/outputs/apk/release/app-release.apk "out/droptocal-${TAG#v}.apk"
-          cp android/app/build/outputs/bundle/play/app-play.aab "out/droptocal-${TAG#v}-play.aab"
+          cp "$full" "out/droptocal-${TAG#v}.apk"
+          cp "$foss" "out/droptocal-${TAG#v}-foss.apk"
+          cp "$aab" "out/droptocal-${TAG#v}-play.aab"
           rm -f "$RUNNER_TEMP"/*.jks "$RUNNER_TEMP"/*.properties
           echo "apk_key=$apk_key" >> "$GITHUB_OUTPUT"
           echo "aab_key=$aab_key" >> "$GITHUB_OUTPUT"
@@ -106,6 +128,7 @@ jobs:
             echo "DropToCal ${TAG#v} for Android."
             echo
             echo "- \`droptocal-${TAG#v}.apk\`: install directly (Android asks about installing from an unknown source)."
+            echo "- \`droptocal-${TAG#v}-foss.apk\`: the same without Play Integrity, as F-Droid builds it. Installs over either."
             echo "- \`droptocal-${TAG#v}-play.aab\`: for Google Play."
             echo
             echo "Settings asks for an AI provider (OpenAI-compatible, or Anthropic) and a key on first run."

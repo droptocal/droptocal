@@ -43,13 +43,13 @@ android {
         applicationId "org.droptocal.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Every build so far called itself version 1, so two APKs a week apart
-        // were indistinguishable on the phone and Android saw no reason to
-        // install the newer one over the older. CI passes the run number and
-        // the date; a build by hand stays at 1, which is what a build by hand
-        // is for.
-        versionCode = (project.findProperty('caldropBuild') ?: '1').toInteger()
-        versionName = project.findProperty('caldropVersion') ?: '1.0-dev'
+        // The release this is, as F-Droid reads it: literals, which
+        // scripts/version.mjs numbers and checks every tag against. Builds
+        // between releases are given their own code and name by -P.
+        versionCode 10200000
+        versionName "1.2.0"
+        if (project.hasProperty('caldropBuild')) versionCode = project.caldropBuild.toInteger()
+        if (project.hasProperty('caldropVersion')) versionName = project.caldropVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -73,6 +73,22 @@ android {
                 keyAlias uploadKey.getProperty('keyAlias')
                 keyPassword uploadKey.getProperty('keyPassword')
             }
+        }
+    }
+    /*
+     * full is everything, Play Integrity included: GitHub's APK and Google
+     * Play. foss leaves out the one proprietary library, for F-Droid, which
+     * takes nothing proprietary; without it the free API gives the plain ration.
+     * Same ID, same key, so either installs over the other.
+     */
+    flavorDimensions = ['distribution']
+    productFlavors {
+        full {
+            dimension 'distribution'
+            isDefault = true
+        }
+        foss {
+            dimension 'distribution'
         }
     }
     buildTypes {
@@ -109,8 +125,8 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
     // Play's word that this is the app it installed (IntegrityPlugin), for
-    // the free API's larger ration.
-    implementation "com.google.android.play:integrity:1.6.0"
+    // the free API's larger ration. Proprietary, so only in full.
+    fullImplementation "com.google.android.play:integrity:1.6.0"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
@@ -119,11 +135,3 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}

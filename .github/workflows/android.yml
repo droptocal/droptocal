@@ -21,6 +21,9 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The tags and the commits since the last, which number the build.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
@@ -62,15 +65,16 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.CALDROP_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.CALDROP_KEYSTORE_PASSWORD }}
 
-      - name: Assemble the debug APK
-        working-directory: app/android
-        # The version code is minutes since 2026-01-01: it rises with every
-        # build whichever workflow makes it, which Google Play requires and a
-        # run number (one count per workflow) does not give. The name carries
-        # the date, the run and the web app's ref, which a tester reports.
+      # The version code is the last release's plus the commits since (see
+      # scripts/version.mjs). The name carries the date, the run and the web
+      # app's ref, which a tester reports. foss is built too, so a change that
+      # breaks it is seen here rather than by F-Droid.
+      - name: Assemble the debug APKs
         run: |
-          ./gradlew --no-daemon assembleDebug \
-            -PcaldropBuild="$(( ($(date -u +%s) - 1767225600) / 60 ))" \
+          code="$(node scripts/version.mjs dev)"
+          cd android
+          ./gradlew --no-daemon assembleFullDebug assembleFossDebug \
+            -PcaldropBuild="$code" \
             -PcaldropVersion="$(date -u +%Y-%m-%d).${GITHUB_RUN_NUMBER} (main@${WEB_COMMIT})"
         env:
           WEB_COMMIT: ${{ steps.web.outputs.commit }}
@@ -81,14 +85,14 @@ jobs:
         id: signer
         run: |
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
-          digest="$("$apksigner" verify --print-certs android/app/build/outputs/apk/debug/app-debug.apk | grep -m1 'SHA-256' | awk '{print $NF}')"
+          digest="$("$apksigner" verify --print-certs android/app/build/outputs/apk/full/debug/app-full-debug.apk | grep -m1 'SHA-256' | awk '{print $NF}')"
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
           rm -f "$RUNNER_TEMP/release.jks" "$RUNNER_TEMP/signing.properties"
 
       - uses: actions/upload-artifact@v7
         with:
           name: droptocal-debug-apk
-          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          path: app/android/app/build/outputs/apk/full/debug/app-full-debug.apk
           if-no-files-found: error
 
       - name: Say where it is

@@ -15,12 +15,12 @@
     "test:phone": "node scripts/phone-test.mjs"
   },
   "dependencies": {
-    "@capacitor/android": "^8.5.2",
+    "@capacitor/android": "^8.6.0",
     "@capacitor/core": "^8.5.2",
-    "@capacitor/ios": "^8.5.2"
+    "@capacitor/ios": "^8.6.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.5.2",
+    "@capacitor/cli": "^8.6.0",
     "typescript": "^5.6.3"
   },
   "overrides": {
